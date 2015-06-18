@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # Generador de bucles de espera en ensamblador PIC.
 # Joaquín Ferrero.
@@ -27,9 +27,7 @@
 #
 
 ### Bibliotecas ---------------------------------------------------------------
-use v5.14;				# Perl moderno
-use feature 'switch';
-no warnings 'experimental';
+use v5.14;
 use utf8::all;				# activa todo el soporte UTF-8
 use Getopt::Long;			# interpretación de argumentos
 use POSIX qw<locale_h strftime>;	# soporte de localización
@@ -70,7 +68,8 @@ my $ciclos_restantes;			# ciclos extra que se pondrán al final
 my @d;					# parámetros de los bucles anidados
 my $error;				# error cometido con respecto a lo solicitado
 
-my $txt_hoy     = decode_utf8 strftime("%c", localtime);	# textos a generar
+					# textos a generar
+my $txt_hoy     = decode_utf8 strftime("%c", localtime);
 my $txt_cmdline = join " ", $0, @ARGV;
 my $txt_cblock  = '';
 my $txt_carga   = '';
@@ -215,18 +214,15 @@ sub espera {
         my $sufijo = $2 // 'c';		# por defecto, ciclos de procesador
            $sufijo =~ tr/µ/u/;		# simplificar los casos
 
-        $multiplicador = do {
-            given ($sufijo) {
-                when ('c') { 1 }                 # ciclos de procesador
-                when ('d') { $frec_hz * 86_400 } # días
-                when ('h') { $frec_hz * 3_600 }  # horas
-                when ('m') { $frec_hz * 60 }     # minutos
-                when ('s') { $frec_hz }          # segundos
-                default {                        # fracciones de segundo
-                    $frec_hz * ( 10 ** ( -3 * ( 1 + index 'mun', substr $sufijo, 0, 1 ) ) )
-                }
-            }
-        };
+        $multiplicador
+        	= ($sufijo eq 'c') ? 1                  # ciclos de procesador
+		: ($sufijo eq 'd') ? $frec_hz * 86_400  # días
+		: ($sufijo eq 'h') ? $frec_hz * 3_600   # horas
+		: ($sufijo eq 'm') ? $frec_hz * 60      # minutos
+		: ($sufijo eq 's') ? $frec_hz           # segundos
+                					# fracciones de segundo
+		: $frec_hz * ( 10 ** ( -3 * ( 1 + index 'mun', substr $sufijo, 0, 1 ) ) )
+		;
 
         $multiplicador /= $HZ_CICLO if $sufijo ne 'c';
         $espera_ciclos = ( 0+ $espera_solicitada) * $multiplicador;
